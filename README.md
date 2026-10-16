@@ -177,14 +177,14 @@ Use **Import from File** in the Homework view to bring homework in from a local
 duplicates, and merged into your existing list — nothing is overwritten. See
 `docs/IMPORT.md` for the full specification and sample files.
 
-### Bromcom integration
+### VLE integration
 
-StudyFlow does **not** have a live Bromcom VLE integration. A Bromcom connector
-design exists as a documented, not-implemented interface (browser extension
-reading the authenticated VLE portal via `postMessage`), but it requires
-authenticated VLE access that is not available. Homework import is instead
-provided through the local file-import workflow described above. No school
-credentials, cookies, or private data are ever requested or stored.
+StudyFlow does **not** have a live VLE (virtual learning environment) integration.
+A connector design exists as a documented, not-implemented interface (browser
+extension reading the authenticated portal via `postMessage`), but it requires
+authenticated access that is not available. Homework import is instead provided
+through the local file-import workflow described above. No school credentials,
+cookies, or private data are ever requested or stored.
 
 ## Accessibility and responsive design
 
@@ -201,7 +201,7 @@ credentials, cookies, or private data are ever requested or stored.
   devices. Export your data regularly for backups.
 - **`localStorage` limits:** Browsers typically cap `localStorage` at ~5–10 MB;
   very large timetables may exceed this.
-- **No live VLE integration:** The Bromcom connector is a design document only;
+- **No live VLE integration:** The connector is a design document only;
   homework import is via local CSV/JSON files.
 - **No user accounts or sharing:** Data is private to your browser profile.
 
