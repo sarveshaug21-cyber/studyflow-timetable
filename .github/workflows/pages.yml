@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+# This workflow is triggered by a new push to master (not by re-running failed
+# jobs) so each run starts with zero retained artifacts. Re-running a failed job
+# would upload another artifact named "github-pages" while keeping the earlier
+# one, causing deploy-pages to find multiple artifacts with the same name.
 on:
   push:
     branches: [master]
