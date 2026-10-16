@@ -52,8 +52,14 @@ export interface HomeworkItem {
   submissionType: 'online' | 'paper' | 'upload' | null;
   viewUrl?: string;
   hide: boolean;
-  source: 'bromcom' | 'manual';
+  source: 'manual' | 'file';
   completedAt?: string | null;
+  /**
+   * Optional free-text description / notes for the homework. Not shown in the
+   * compact list view but available on the record and editable through the
+   * existing workflows.
+   */
+  description?: string;
   /**
    * User-adjustable priority used by the scheduling engine. Optional so older
    * records stay type-correct; treat `undefined` as 'medium' via

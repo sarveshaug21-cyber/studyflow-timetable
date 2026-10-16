@@ -1,0 +1,5 @@
+title,subject,dueDate,teacher,type,status,priority,estimatedMinutes,description,group
+Chapter 3 Exercises,Mathematics,2026-10-20,Mr. Smith,Homework,pending,urgent,90,Complete recursion problems set,CS101-A
+Essay: Climate Change,Geography,2026-10-15,Ms. Jones,Essay,overdue,high,60,"Five-paragraph essay on climate change",10A
+"Limits, Continuity, and Derivatives",Calculus I,2026-10-25,"Prof. James Wilson",Coursework,pending,medium,45,"Read chapters 4-5, complete odd-numbered exercises",MATH101-A
+Newton's Laws Lab Report,General Physics,2026-11-02,Dr. Emily Rodriguez,"Lab Report",pending,low,45,"Write up the pendulum experiment results",PHYS101-A

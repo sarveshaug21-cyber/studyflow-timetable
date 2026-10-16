@@ -227,7 +227,7 @@ export function HomeworkView({
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={onImportClick} className="gap-2">
             <Upload className="h-4 w-4" />
-            Import from Bromcom
+            Import from File
           </Button>
           <Button variant="outline" onClick={handleAddHomework} className="gap-2">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +287,7 @@ export function HomeworkView({
           </svg>
           <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">No homework found</h3>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            {searchQuery ? 'Try adjusting your search or filters' : 'Import from Bromcom or add manually to get started'}
+            {searchQuery ? 'Try adjusting your search or filters' : 'Import from file or add manually to get started'}
           </p>
           {!searchQuery && filter === 'all' && (
             <div className="mt-4 flex gap-2">
@@ -299,7 +299,7 @@ export function HomeworkView({
               </Button>
               <Button variant="outline" onClick={onImportClick} className="gap-2">
                 <Upload className="h-4 w-4" />
-                Import from Bromcom
+                Import from File
               </Button>
             </div>
           )}

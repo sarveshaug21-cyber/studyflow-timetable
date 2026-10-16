@@ -14,8 +14,8 @@
 - Audited user workflows (code + tests): homework lifecycle, study planner, focus mode, progress dashboard, persistence/storage, timetable layout, export, settings. No genuine defects found; all are regression-tested.
 - **Lint gate re-verified**: `npm run lint` passes with **0 errors, 8 warnings** (`8 ≤ --max-warnings 10`, exits 0). All 8 are pre-existing `react-refresh/only-export-components` in Toast.tsx (2), TimetableContext.tsx (6), TimetableLayoutContext.tsx (1). No `react-hooks/exhaustive-deps` warnings exist in the current checkout; no source change was required. Refactoring those three files' export structure is optional polish, not a release blocker.
 
-## Blocked
-- [ ] **Bromcom live sync** — requires authenticated VLE access + school IT authorisation (`BROMCOM_CONNECTOR_DESIGN.md`). Import button in `App.tsx` is a TODO.
+## In Progress
+- [ ] **Local CSV/JSON homework import** — replace the existing import stub with a general-purpose file import (parser, validator, preview, apply, duplicate detection, merge behavior).
 
 ## Optional (not defects — no evidence of broken user journeys)
 - Focus break timer (`focusAutoStartBreaks` setting exists)

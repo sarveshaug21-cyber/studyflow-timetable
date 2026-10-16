@@ -194,12 +194,13 @@ individually testable) and locked down by 15 regression tests:
 
 ---
 
-## Bromcom Integration (unchanged, still blocked)
+## Homework Import (local-first, file-based)
 
-The fixture-based connector boundary and its 20 tests are unchanged and still
-passing. Live sync remains blocked pending authenticated VLE access, school IT
-authorisation, and the absence of an official public VLE API (see
-`BROMCOM_CONNECTOR_DESIGN.md`).
+StudyFlow is local-first: there is no cloud sync, no remote API, and no
+authenticated VLE integration. Homework can be imported from a local `.csv` or
+`.json` file through the file picker in the Homework view. Imported records are
+validated, previewed, and merged into existing data — nothing is silently
+overwritten. See `docs/IMPORT.md` for the supported file formats and behavior.
 
 ---
 
@@ -207,7 +208,7 @@ authorisation, and the absence of an official public VLE API (see
 
 | Priority | Task | Notes |
 |----------|------|-------|
-| **High** | Bromcom extension development | Requires authenticated VLE access |
+| **High** | Local CSV/JSON homework import | Implement parser, validator, preview, apply, duplicate detection, merge behavior |
 | **Medium** | Lower the lint warning count below the `--max-warnings 10` gate | Already passing: 8 warnings ≤ 10 gate; refactor of `Toast.tsx`/`TimetableContext.tsx`/`TimetableLayoutContext.tsx` export structure is optional polish, not required for release. |
 | **Medium** | Focus: break timer between focus sessions | Settings already expose `focusAutoStartBreaks` |
 | **Medium** | Homework recurrence + reminders | Unrelated to this session's scope |

@@ -1,0 +1,41 @@
+[
+  {
+    "title": "Chapter 3 Exercises",
+    "subject": "Mathematics",
+    "dueDate": "2026-10-20",
+    "teacher": "Mr. Smith",
+    "group": "CS101-A",
+    "type": "Homework",
+    "status": "pending",
+    "priority": "urgent",
+    "estimatedMinutes": 90,
+    "description": "Complete recursion problems set",
+    "source": "file"
+  },
+  {
+    "title": "Essay: Climate Change",
+    "subject": "Geography",
+    "dueDate": "2026-10-15",
+    "teacher": "Ms. Jones",
+    "group": "10A",
+    "type": "Essay",
+    "status": "overdue",
+    "priority": "high",
+    "estimatedMinutes": 60,
+    "description": "Five-paragraph essay on climate change",
+    "source": "file"
+  },
+  {
+    "title": "Limits, Continuity, and Derivatives",
+    "subject": "Calculus I",
+    "dueDate": "2026-10-25",
+    "teacher": "Prof. James Wilson",
+    "group": "MATH101-A",
+    "type": "Coursework",
+    "status": "pending",
+    "priority": "medium",
+    "estimatedMinutes": 45,
+    "description": "Read chapters 4-5, complete odd-numbered exercises",
+    "source": "file"
+  }
+]

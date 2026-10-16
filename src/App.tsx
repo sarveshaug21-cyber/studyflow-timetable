@@ -6,6 +6,7 @@ import { SubjectManager } from '@/components/subjects';
 import { SessionEditor } from '@/components/sessions';
 import { EmptyState } from '@/components/timetable/EmptyState';
 import { HomeworkView } from '@/components/homework/HomeworkView';
+import { ImportDialog } from '@/components/homework/ImportDialog';
 import { FocusMode } from '@/components/focus/FocusMode';
 import { ProgressDashboard } from '@/components/progress/ProgressDashboard';
 import { StudyPlanner } from '@/components/planner/StudyPlanner';
@@ -21,6 +22,7 @@ type AppTab = 'timetable' | 'homework' | 'focus' | 'progress' | 'planner' | 'sub
 function AppContent() {
   const { 
     state, 
+    dispatch,
     addSession,
     addHomework,
     updateHomework,
@@ -29,6 +31,7 @@ function AppContent() {
   const [sessionEditorOpen, setSessionEditorOpen] = useState(false);
   const [initialSessionData, setInitialSessionData] = useState<Partial<import('@/types').Session> | null>(null);
   const [activeTab, setActiveTab] = useState<AppTab>('timetable');
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const handleAddSession = () => {
     setInitialSessionData(null);
@@ -40,30 +43,13 @@ function AppContent() {
     setSessionEditorOpen(false);
   };
 
-  const handleImportHomework = () => {
-    // TODO: Implement Bromcom import
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const data = JSON.parse(event.target?.result as string);
-            if (Array.isArray(data)) {
-              // TODO: Implement actual import logic
-              console.log('Imported homework:', data);
-            }
-          } catch {
-            console.error('Invalid JSON');
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
+  const handleImportOpen = () => setImportDialogOpen(true);
+
+  const handleImportClose = () => setImportDialogOpen(false);
+
+  const handleImportApply = (mergedHomework: import('@/types').HomeworkItem[]) => {
+    dispatch({ type: 'SET_STATE', payload: { ...state, homework: mergedHomework } });
+    setImportDialogOpen(false);
   };
 
   const showMainContent = state.subjects.length > 0 || state.sessions.length > 0 || state.homework.length > 0;
@@ -174,7 +160,7 @@ function AppContent() {
             <HomeworkView
               homework={state.homework}
               subjects={state.subjects}
-              onImportClick={handleImportHomework}
+              onImportClick={handleImportOpen}
               onAddHomework={addHomework}
               onUpdateHomework={updateHomework}
               onRemoveHomework={removeHomework}
@@ -201,6 +187,13 @@ function AppContent() {
         onSubmit={handleSessionSubmit}
         initialData={initialSessionData || undefined}
         subjects={state.subjects}
+      />
+
+      <ImportDialog
+        isOpen={importDialogOpen}
+        onClose={handleImportClose}
+        homework={state.homework}
+        onImported={handleImportApply}
       />
     </div>
   );
