@@ -4,7 +4,7 @@ export type TimeIncrement = 30 | 60;
 
 export type SessionType = 'lecture' | 'lab' | 'tutorial' | 'seminar' | 'study';
 
-export type ViewMode = 'weekly' | 'agenda';
+export type ViewMode = 'weekly' | 'agenda' | 'day' | 'month';
 
 export type HomeworkPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -25,6 +25,8 @@ export interface Session {
   day: DayOfWeek;
   /** ISO date (yyyy-MM-dd) for one-off sessions; undefined for weekly-recurring ones. */
   date?: string;
+  /** All-day event (startTime/endTime are not significant). */
+  allDay?: boolean;
   startTime: string;
   endTime: string;
   type: SessionType;

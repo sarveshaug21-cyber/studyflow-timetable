@@ -1,7 +1,11 @@
+import { useCallback } from 'react';
+import { DndContext, DragEndEvent, PointerSensor, useSensor } from '@dnd-kit/core';
 import { useTimetable } from '@/hooks/useTimetable';
 import { useTimetableLayout } from '@/context/TimetableLayoutContext';
 import { SessionBlock } from './SessionBlock';
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
+import { timeToMinutes } from '@/utils/date';
+import { shiftSessionByPixels, addMinutes, durationMinutes } from '@/utils/calendar';
 import { isToday } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -11,11 +15,49 @@ interface DayColumnProps {
 }
 
 export function DayColumn({ day, className }: DayColumnProps) {
-  const { getSessionsForDay, getSubject } = useTimetable();
+  const { getSessionsForDay, getSubject, sessions, updateSession } = useTimetable();
   const { config, getTimeSlots, getSessionTop, getSessionHeight } = useTimetableLayout();
-  const sessions = getSessionsForDay(day);
+  const columnSessions = getSessionsForDay(day);
   const today = isToday(day);
   const timeSlots = getTimeSlots();
+
+  const sensors = useSensor(PointerSensor);
+  const pixelsPerMinute = config.pixelsPerHour / 60;
+
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const id = String(event.active.id);
+      const isResize = id.startsWith('resize:');
+      const sessionId = id.replace(/^(move:|resize:)/, '');
+      const session = sessions.find((s) => s.id === sessionId);
+      if (!session) return;
+
+      if (isResize) {
+        const deltaMinutes = Math.round(event.delta.y / pixelsPerMinute);
+        const duration = Math.max(30, durationMinutes(session.startTime, session.endTime) + deltaMinutes);
+        const endTime = addMinutes(session.startTime, duration);
+        const rangeEndMinutes = timeToMinutes(config.timeRange.end);
+        if (timeToMinutes(endTime) > rangeEndMinutes) {
+          const newDuration = rangeEndMinutes - timeToMinutes(session.startTime);
+          if (newDuration < 30) return;
+          updateSession({ ...session, endTime: addMinutes(session.startTime, newDuration) });
+          return;
+        }
+        updateSession({ ...session, endTime });
+        return;
+      }
+
+      const { startTime, endTime } = shiftSessionByPixels(
+        session,
+        event.delta.y,
+        pixelsPerMinute,
+        config.timeRange,
+        config.timeIncrement,
+      );
+      updateSession({ ...session, startTime, endTime });
+    },
+    [sessions, updateSession, config, pixelsPerMinute],
+  );
 
   return (
     <div
@@ -70,21 +112,23 @@ export function DayColumn({ day, className }: DayColumnProps) {
             </div>
           ))}
         </div>
-        {sessions.map(session => {
-          const subject = getSubject(session.subjectId);
-          if (!subject) return null;
-          const top = getSessionTop(session.startTime);
-          const height = getSessionHeight(session.startTime, session.endTime);
-          return (
-            <SessionBlock
-              key={session.id}
-              session={session}
-              subject={subject}
-              top={top}
-              height={height}
-            />
-          );
-        })}
+        <DndContext sensors={[sensors]} onDragEnd={onDragEnd}>
+          {columnSessions.map((session) => {
+            const subject = getSubject(session.subjectId);
+            if (!subject) return null;
+            const top = getSessionTop(session.startTime);
+            const height = getSessionHeight(session.startTime, session.endTime);
+            return (
+              <SessionBlock
+                key={session.id}
+                session={session}
+                subject={subject}
+                top={top}
+                height={height}
+              />
+            );
+          })}
+        </DndContext>
         <CurrentTimeIndicator day={day} timeRange={config.timeRange} timeIncrement={config.timeIncrement} />
       </div>
     </div>

@@ -1,4 +1,3 @@
-import { ViewSwitcher } from './ViewSwitcher';
 import { ExportMenu } from './ExportMenu';
 import { SettingsPanel } from './SettingsPanel';
 import { Button } from '@/components/ui';
@@ -12,7 +11,6 @@ export function Toolbar({ onAddSession }: ToolbarProps) {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
       <div className="flex items-center gap-3 flex-1">
-        <ViewSwitcher />
         <ExportMenu />
         <SettingsPanel />
       </div>

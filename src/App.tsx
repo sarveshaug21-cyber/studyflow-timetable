@@ -2,6 +2,7 @@ import { Header } from '@/components/layout';
 import { Toolbar } from '@/components/layout/Toolbar';
 import { TimetableGrid } from '@/components/timetable';
 import { AgendaView } from '@/components/agenda';
+import { MonthView, DayView, CalendarNav } from '@/components/calendar';
 import { SubjectManager } from '@/components/subjects';
 import { SessionEditor } from '@/components/sessions';
 import { EmptyState } from '@/components/timetable/EmptyState';
@@ -12,7 +13,9 @@ import { ProgressDashboard } from '@/components/progress/ProgressDashboard';
 import { StudyPlanner } from '@/components/planner/StudyPlanner';
 import { ToastProvider } from '@/components/ui/Toast';
 import { TimetableLayoutProvider } from '@/context/TimetableLayoutContext';
+import { CalendarProvider } from '@/context/CalendarContext';
 import { useTimetable } from '@/hooks/useTimetable';
+import { useCalendar } from '@/hooks/useCalendar';
 import { useState } from 'react';
 import { Timer, BarChart3, CalendarClock } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -20,14 +23,15 @@ import { cn } from '@/utils/cn';
 type AppTab = 'timetable' | 'homework' | 'focus' | 'progress' | 'planner' | 'subjects';
 
 function AppContent() {
-  const { 
-    state, 
+  const {
+    state,
     dispatch,
     addSession,
     addHomework,
     updateHomework,
     removeHomework,
   } = useTimetable();
+  const { view } = useCalendar();
   const [sessionEditorOpen, setSessionEditorOpen] = useState(false);
   const [initialSessionData, setInitialSessionData] = useState<Partial<import('@/types').Session> | null>(null);
   const [activeTab, setActiveTab] = useState<AppTab>('timetable');
@@ -57,6 +61,7 @@ function AppContent() {
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
       <Header />
+      <CalendarNav />
       <Toolbar onAddSession={handleAddSession} />
 
       <div className="flex-1 flex overflow-hidden">
@@ -146,14 +151,16 @@ function AppContent() {
         <main className="flex-1 flex flex-col overflow-hidden">
           {activeTab === 'timetable' ? (
             <div className="flex-1 flex flex-col overflow-hidden">
-              {state.view === 'weekly' ? (
-                showMainContent ? (
-                  <TimetableGrid />
-                ) : (
-                  <EmptyState />
-                )
+              {showMainContent ? (
+                view === 'weekly'
+                  ? <TimetableGrid />
+                  : view === 'day'
+                  ? <DayView />
+                  : view === 'month'
+                  ? <MonthView />
+                  : <AgendaView />
               ) : (
-                <AgendaView />
+                <EmptyState />
               )}
             </div>
           ) : activeTab === 'homework' ? (
@@ -202,9 +209,11 @@ function AppContent() {
 export default function App() {
   return (
     <ToastProvider>
-      <TimetableLayoutProvider>
-        <AppContent />
-      </TimetableLayoutProvider>
+      <CalendarProvider>
+        <TimetableLayoutProvider>
+          <AppContent />
+        </TimetableLayoutProvider>
+      </CalendarProvider>
     </ToastProvider>
   );
 }

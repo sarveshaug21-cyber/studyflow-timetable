@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import { useTimetable } from '@/hooks/useTimetable';
 import { MoreVertical, Trash2, Edit2 } from 'lucide-react';
-import { Dropdown } from '@/components/ui';
+import { Dropdown } from '@/components/ui/Dropdown';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { getContrastColor } from '@/utils/colors';
+import { cn } from '@/utils/cn';
 import type { Session, Subject } from '@/types';
 
 interface SessionBlockProps {
@@ -19,16 +21,39 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const textColor = getContrastColor(subject.color);
 
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `move:${session.id}`,
+  });
+
+  const {
+    attributes: resizeAttributes,
+    listeners: resizeListeners,
+    setNodeRef: resizeRef,
+  } = useDraggable({
+    id: `resize:${session.id}`,
+  });
+
   return (
     <>
       <div
-        className="absolute left-1 right-1 rounded-lg transition-all duration-150 hover:shadow-md hover:scale-[1.01] z-10"
+        data-session-id={session.id}
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+        className={cn(
+          'absolute left-1 right-1 rounded-lg transition-all duration-150 hover:shadow-md hover:scale-[1.01] z-10 group',
+          'group-focus-within:z-20'
+        )}
         style={{
           top: top,
           height: height,
           minHeight: '32px',
           backgroundColor: subject.color,
           color: textColor,
+          ...(isDragging && transform && {
+            transform: `translate3d(0,${transform.y}px,0)`,
+            opacity: 0.6,
+          }),
         } as React.CSSProperties}
         role="button"
         tabIndex={0}
@@ -38,6 +63,10 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             setEditOpen(true);
+          }
+          if (e.key === 'Delete') {
+            e.preventDefault();
+            deleteSession(session.id);
           }
         }}
       >
@@ -50,10 +79,21 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
             <Dropdown
               trigger={
                 <button
-                  className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-black/10 hover:bg-white/10 transition-all"
+                  className={cn(
+                    'p-2 rounded transition-all duration-200',
+                    // Faintly visible by default so the trigger is discoverable on
+                    // touch devices (no hover state), then fully opaque on hover
+                    // or keyboard focus within the session block.
+                    'opacity-50 group-hover:opacity-100 group-focus-within:opacity-100',
+                    'hover:bg-black/20 hover:bg-white/20 dark:hover:bg-black/30 dark:hover:bg-white/10',
+                    'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:outline-none'
+                  )}
                   aria-label="More options"
+                  // Pressing the menu trigger must never initiate a drag of the
+                  // session block; DnD remains available from the block body.
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  <MoreVertical className="h-4 w-4" aria-hidden="true" />
                 </button>
               }
               items={[
@@ -71,6 +111,13 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
             {session.location && (
               <span className="text-xs opacity-90 truncate max-w-[60px]">{session.location}</span>
             )}
+            <div
+              ref={resizeRef}
+              {...resizeAttributes}
+              {...resizeListeners}
+              className="absolute right-0 bottom-0 w-1.5 h-1.5 cursor-ns-resize bg-brand-400/60 hover:bg-brand-400 rounded-md"
+              aria-label="Resize session"
+            />
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, cloneElement, isValidElement } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -44,9 +44,23 @@ export function Dropdown({ trigger, items, onSelect, align = 'right', className 
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, close]);
 
+  // Clicking the trigger element toggles the menu open/closed. The trigger is
+  // cloned so any onClick the parent supplied is preserved and invoked.
+  const triggerElement = isValidElement(trigger)
+    ? cloneElement(trigger, {
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+          if (typeof trigger.props.onClick === 'function') {
+            trigger.props.onClick(e);
+          }
+        },
+      })
+    : trigger;
+
   return (
     <div ref={dropdownRef} className={cn('relative inline-block', className)}>
-      {trigger}
+      {triggerElement}
       {isOpen && (
         <div
           className={cn(
