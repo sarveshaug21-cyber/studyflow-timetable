@@ -29,7 +29,6 @@ const STATUS_OPTIONS = [
   { label: 'Pending', value: 'pending' as const },
   { label: 'Submitted', value: 'submitted' as const },
   { label: 'Completed', value: 'completed' as const },
-  { label: 'Overdue', value: 'overdue' as const },
 ] as const;
 
 const SUBMISSION_TYPE_OPTIONS = [

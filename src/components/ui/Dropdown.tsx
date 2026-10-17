@@ -3,12 +3,13 @@ import { ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export interface DropdownItem {
-  label: string;
-  value: string;
+  label?: string;
+  value?: string;
   icon?: React.ReactNode;
   disabled?: boolean;
   destructive?: boolean;
   shortcut?: string;
+  type?: 'divider';
 }
 
 export interface DropdownProps {
@@ -75,7 +76,15 @@ export function Dropdown({ trigger, items, onSelect, align = 'right', className 
               type="button"
               onClick={() => {
                 if (!item.disabled) {
-                  onSelect(item.value);
+                  onSelect(item.value!);
+                  close();
+                }
+              }}
+              onKeyDown={(e) => {
+                if (item.disabled) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelect(item.value!);
                   close();
                 }
               }}
@@ -88,12 +97,12 @@ export function Dropdown({ trigger, items, onSelect, align = 'right', className 
                 item.disabled
                   ? 'text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
                   : item.destructive
-                  ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                  : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                    ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800',
               )}
             >
               {item.icon && <span className="flex h-4 w-4">{item.icon}</span>}
-              <span className="flex-1 text-left">{item.label}</span>
+              <span className="flex-1 text-left">{item.label ?? ''}</span>
               {item.shortcut && (
                 <kbd className="px-1.5 py-0.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 rounded">
                   {item.shortcut}
@@ -169,13 +178,13 @@ export function SelectDropdown({
           className="absolute z-50 mt-1.5 w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-elevated overflow-hidden animate-slide-in"
           role="listbox"
         >
-          {items.map(item => (
+          {items.map((item, i) => (
             <button
-              key={item.value}
+              key={item.value ?? i}
               type="button"
               onClick={() => {
                 if (!item.disabled) {
-                  onChange(item.value);
+                  onChange(item.value!);
                   close();
                 }
               }}
@@ -183,6 +192,14 @@ export function SelectDropdown({
               role="option"
               aria-selected={item.value === value}
               tabIndex={-1}
+              onKeyDown={(e) => {
+                if (item.disabled) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onChange(item.value!);
+                  close();
+                }
+              }}
               className={cn(
                 'flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors',
                 'focus:outline-none focus:bg-neutral-100 dark:focus:bg-neutral-800',
@@ -195,7 +212,7 @@ export function SelectDropdown({
             >
               {item.value === value && <Check className="h-4 w-4 text-brand-600 dark:text-brand-400" />}
               {item.icon && <span className="flex h-4 w-4">{item.icon}</span>}
-              <span className="flex-1 text-left">{item.label}</span>
+              <span className="flex-1 text-left">{item.label ?? ''}</span>
             </button>
           ))}
         </div>

@@ -169,6 +169,26 @@ export function FocusMode() {
     else if (status === 'paused') resumeFocus();
   }, [status, pauseFocus, resumeFocus]);
 
+  // Keyboard: Space starts/pauses the timer when not typing in an input.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handlePauseResume();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handlePauseResume]);
+
   const handleReset = () => {
     resetFocus();
     toast({ type: 'info', title: 'Timer reset', message: 'Session was not counted as completed.' });

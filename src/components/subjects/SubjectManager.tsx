@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import { Plus, BookOpen } from 'lucide-react';
 
 export function SubjectManager() {
-  const { state, addSubject } = useTimetable();
+  const { state, addSubject, updateSubject } = useTimetable();
   const [formOpen, setFormOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<typeof state.subjects[0] | null>(null);
 
@@ -51,7 +51,7 @@ export function SubjectManager() {
         subject={editingSubject}
         onSubmit={(data) => {
           if (editingSubject) {
-            // Update handled by form
+            updateSubject({ id: editingSubject.id, ...data, createdAt: editingSubject.createdAt, updatedAt: editingSubject.updatedAt });
           } else {
             addSubject(data);
           }

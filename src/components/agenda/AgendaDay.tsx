@@ -5,6 +5,7 @@ import { Dropdown } from '@/components/ui';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { useTimetable } from '@/hooks/useTimetable';
 import { getContrastColor } from '@/utils/colors';
+import { cn } from '@/utils/cn';
 import type { Session, Subject } from '@/types';
 import { useState } from 'react';
 
@@ -22,7 +23,7 @@ function AgendaSessionItem({ session }: AgendaSessionProps) {
   return (
     <>
       <div
-        className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:shadow-sm transition-shadow"
+        className="group flex items-center gap-3 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:shadow-sm transition-shadow"
         style={{
           borderLeft: `4px solid ${subject.color}`,
           backgroundColor: `${subject.color}15`,
@@ -46,8 +47,17 @@ function AgendaSessionItem({ session }: AgendaSessionProps) {
         </div>
         <Dropdown
           trigger={
-            <button className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors" aria-label="More options">
-              <MoreVertical className="h-5 w-5 text-neutral-400" />
+            <button
+              className={cn(
+                'p-2 rounded transition-all duration-200',
+                'opacity-50 group-hover:opacity-100 group-focus-within:opacity-100',
+                'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:outline-none'
+              )}
+              aria-label="More options"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-5 w-5 text-neutral-400" aria-hidden="true" />
             </button>
           }
           items={[

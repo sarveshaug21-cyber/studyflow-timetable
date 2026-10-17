@@ -5,13 +5,14 @@ import { Plus } from 'lucide-react';
 
 interface ToolbarProps {
   onAddSession: () => void;
+  onImport?: () => void;
 }
 
-export function Toolbar({ onAddSession }: ToolbarProps) {
+export function Toolbar({ onAddSession, onImport }: ToolbarProps) {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
       <div className="flex items-center gap-3 flex-1">
-        <ExportMenu />
+        <ExportMenu onImport={onImport} />
         <SettingsPanel />
       </div>
       <div className="flex items-center gap-2">

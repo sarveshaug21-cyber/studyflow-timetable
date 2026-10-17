@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Upload, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Badge, Card } from '@/components/ui';
 import { Modal } from '@/components/ui/Modal';
 import type { HomeworkItem } from '@/types';
 import {
@@ -36,11 +37,11 @@ interface ImportResultSectionProps {
 
 function ImportResultSection({ applied, onDone }: ImportResultSectionProps) {
   return (
-    <section className="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/40 p-6 text-center">
+    <Card variant="elevated" className="p-6 text-center">
       <CheckCircle className="h-10 w-10 text-emerald-600 dark:text-emerald-400 mx-auto mb-3" aria-hidden="true" />
-      <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-300 mb-2">
+      <Badge variant="success" size="sm" className="mb-3">
         Import complete
-      </h3>
+      </Badge>
       <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-4">
         {applied.applied} homework item{applied.applied === 1 ? '' : 's'} imported and added to your list.
         {applied.skipped > 0 && ` ${applied.skipped} record{applied.skipped === 1 ? '' : 's'} skipped.`}
@@ -51,7 +52,7 @@ function ImportResultSection({ applied, onDone }: ImportResultSectionProps) {
       <Button onClick={onDone} className="gap-2">
         Done
       </Button>
-    </section>
+    </Card>
   );
 }
 
@@ -73,7 +74,7 @@ function ImportFileStep({
   fileInputRef,
 }: ImportFileStepProps) {
   return (
-    <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
+    <Card className="p-6">
       <div className="flex items-center gap-3 mb-4">
         <Upload className="h-5 w-5 text-brand-600 dark:text-brand-400" aria-hidden="true" />
         <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Select a file</h3>
@@ -115,7 +116,7 @@ function ImportFileStep({
           {parseError}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -136,87 +137,101 @@ function ImportPreviewStep({
   onReset,
   onApply,
 }: ImportPreviewStepProps) {
+  // Build a set of row indices that have validation errors
+  const errorRows = new Set(
+    preview.errors
+      .filter((e) => e.field !== 'file')
+      .map((e) => e.row - 1)
+  );
+
   return (
-    <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-6">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-            Preview: {preview.fileName}
-          </h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {preview.format.toUpperCase()} • {preview.recordCount} record{preview.recordCount === 1 ? '' : 's'} detected
-          </p>
-        </div>
-        <span
-          className={cn(
-            'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
-            preview.duplicates.length > 0
-              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-          )}
+    <Card variant="elevated" className="p-6">
+      <Card.Header>
+        <Card.Title>Preview: {preview.fileName}</Card.Title>
+        <Card.Description>
+          {preview.format.toUpperCase()} • {preview.recordCount} record{preview.recordCount === 1 ? '' : 's'} detected
+        </Card.Description>
+      </Card.Header>
+      <Card.Body className="pt-0">
+        <Badge
+          variant={preview.duplicates.length > 0 ? 'warning' : 'success'}
+          size="sm"
+          className="mb-3"
         >
           {preview.duplicates.length > 0
             ? `${preview.duplicates.length} likely duplicate${preview.duplicates.length === 1 ? '' : 's'} will be skipped`
             : 'No likely duplicates detected'}
-        </span>
-      </div>
+        </Badge>
 
-      {hasErrors && (
-        <div className="mb-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 px-4 py-3" role="alert">
-          <div className="flex items-start gap-2 mb-2">
-            <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
-            <span className="text-sm font-medium text-red-700 dark:text-red-400">
-              {preview.errors.length} validation issue{preview.errors.length === 1 ? '' : 's'}
-            </span>
+        {hasErrors && (
+          <div className="mb-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 px-4 py-3" role="alert">
+            <div className="flex items-start gap-2 mb-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+              <span className="text-sm font-medium text-red-700 dark:text-red-400">
+                {preview.errors.length} validation issue{preview.errors.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <ul className="list-disc list-inside text-xs text-red-600 dark:text-red-400 space-y-1 max-h-32 overflow-y-auto">
+              {preview.errors.slice(0, 10).map((e, i) => (
+                <li key={i}>
+                  {e.field === 'file' ? '' : `Row ${e.row}: `}{e.message}
+                </li>
+              ))}
+              {preview.errors.length > 10 && (
+                <li className="italic">…and {preview.errors.length - 10} more</li>
+              )}
+            </ul>
           </div>
-          <ul className="list-disc list-inside text-xs text-red-600 dark:text-red-400 space-y-1 max-h-32 overflow-y-auto">
-            {preview.errors.slice(0, 10).map((e, i) => (
-              <li key={i}>
-                {e.field === 'file' ? '' : `Row ${e.row}: `}{e.message}
-              </li>
-            ))}
-            {preview.errors.length > 10 && (
-              <li className="italic">…and {preview.errors.length - 10} more</li>
-            )}
-          </ul>
-        </div>
-      )}
+        )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-neutral-200 dark:border-neutral-800">
-              <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Title</th>
-              <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Subject</th>
-              <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Due</th>
-              <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Status</th>
-              <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Teacher</th>
-            </tr>
-          </thead>
-          <tbody>
-            {preview.records.slice(0, SAMPLE_ROWS_TO_SHOW).map((r, i) => (
-              <tr key={i} className="border-b border-neutral-100 dark:border-neutral-800/60">
-                <td className="pt-2.5 pb-2.5 text-neutral-900 dark:text-neutral-100 truncate max-w-[200px]">{r.title}</td>
-                <td className="pt-2.5 pb-2.5 text-neutral-600 dark:text-neutral-300">{r.subject}</td>
-                <td className="pt-2.5 pb-2.5 text-neutral-600 dark:text-neutral-300">{r.dueDate}</td>
-                <td className="pt-2.5 pb-2.5">
-                  <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', statusColor(r.status ?? 'pending'))}>
-                    {r.status ?? 'pending'}
-                  </span>
-                </td>
-                <td className="pt-2.5 pb-2.5 text-neutral-600 dark:text-neutral-300 truncate max-w-[120px]">{r.teacher ?? '—'}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-neutral-200 dark:border-neutral-800">
+                <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Title</th>
+                <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Subject</th>
+                <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Due</th>
+                <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Status</th>
+                <th className="pt-3 pb-3 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Teacher</th>
               </tr>
-            ))}
-            {preview.recordCount > SAMPLE_ROWS_TO_SHOW && (
-              <tr>
-                <td colSpan={5} className="pt-2.5 pb-2.5 text-center text-xs text-neutral-500 dark:text-neutral-400 italic">
-                  …and {preview.recordCount - SAMPLE_ROWS_TO_SHOW} more record{preview.recordCount - SAMPLE_ROWS_TO_SHOW === 1 ? '' : 's'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {preview.records.slice(0, SAMPLE_ROWS_TO_SHOW).map((r, i) => {
+                const hasError = errorRows.has(i);
+                return (
+                  <tr
+                    key={i}
+                    className={cn(
+                      'border-b border-neutral-100 dark:border-neutral-800/60',
+                      hasError && 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40',
+                    )}
+                  >
+                    <td className={cn('pt-2.5 pb-2.5 text-neutral-900 dark:text-neutral-100 truncate max-w-[200px]', hasError && 'text-red-700 dark:text-red-400 font-medium')}>
+                      {r.title}
+                    </td>
+                    <td className="pt-2.5 pb-2.5 text-neutral-600 dark:text-neutral-300">{r.subject}</td>
+                    <td className="pt-2.5 pb-2.5 text-neutral-600 dark:text-neutral-300">{r.dueDate}</td>
+                    <td className="pt-2.5 pb-2.5">
+                      <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', statusColor(r.status ?? 'pending'))}>
+                        {r.status ?? 'pending'}
+                      </span>
+                    </td>
+                    <td className="pt-2.5 pb-2.5 text-neutral-600 dark:text-neutral-300 truncate max-w-[120px]">{r.teacher ?? '—'}</td>
+                  </tr>
+                );
+              })}
+              {preview.recordCount > SAMPLE_ROWS_TO_SHOW && (
+                <tr>
+                  <td colSpan={5} className="pt-2.5 pb-2.5 text-center text-xs text-neutral-500 dark:text-neutral-400 italic">
+                    …and {preview.recordCount - SAMPLE_ROWS_TO_SHOW} more record{preview.recordCount - SAMPLE_ROWS_TO_SHOW === 1 ? '' : 's'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+      </Card.Body>
 
       {preview.duplicates.length > 0 && (
         <div className="mt-4 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/40 px-4 py-3">
@@ -254,7 +269,7 @@ function ImportPreviewStep({
           {applying ? 'Importing…' : `Import ${preview.unique.length} record${preview.unique.length === 1 ? '' : 's'}`}
         </Button>
       </div>
-    </section>
+    </Card>
   );
 }
 

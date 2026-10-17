@@ -3,6 +3,7 @@ import { useTimetable } from '@/hooks/useTimetable';
 import { Dropdown } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { getContrastColor } from '@/utils/colors';
+import { cn } from '@/utils/cn';
 import type { Subject } from '@/types';
 import { useState } from 'react';
 
@@ -56,8 +57,18 @@ export function SubjectCard({ subject, sessionCount, onEdit }: SubjectCardProps)
           </div>
           <Dropdown
             trigger={
-              <button className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all" aria-label="More options">
-                <MoreVertical className="h-5 w-5 text-neutral-400" />
+              <button
+                className={cn(
+                  'p-2 rounded transition-all duration-200',
+                  'opacity-50 group-hover:opacity-100 group-focus-within:opacity-100',
+                  'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                  'focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:outline-none'
+                )}
+                aria-label="More options"
+                // Pressing the menu trigger must never drag the subject card.
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-5 w-5 text-neutral-400" aria-hidden="true" />
               </button>
             }
             items={[

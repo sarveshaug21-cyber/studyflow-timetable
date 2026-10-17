@@ -3,6 +3,7 @@ import { useTimetable } from '@/hooks/useTimetable';
 import { useSettings } from '@/hooks/useSettings';
 import { useTheme } from '@/hooks/useTheme';
 import { Button, Input, Select, SelectOption } from '@/components/ui';
+import { Badge, Card, Section, SectionHeader } from '@/components/ui';
 import { Modal } from '@/components/ui/Modal';
 
 export function SettingsPanel() {
@@ -52,9 +53,9 @@ export function SettingsPanel() {
         description="Customize your timetable preferences"
         size="lg"
       >
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-4">Appearance</h3>
+        <Section padded={false}>
+          <SectionHeader title="Appearance" description="Choose how StudyFlow looks." />
+          <Card variant="elevated" className="p-6">
             <Select
               label="Theme"
               value={theme}
@@ -62,40 +63,43 @@ export function SettingsPanel() {
               options={themeOptions}
               placeholder="Select theme"
             />
-          </div>
+          </Card>
+          <Badge variant="brand" size="sm">
+            {theme === 'system' ? 'Following system' : theme.charAt(0).toUpperCase() + theme.slice(1)} mode
+          </Badge>
+        </Section>
 
-          <div>
-            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-4">Timetable</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select
-                label="Time Increment"
-                value={String(settings.timeIncrement)}
-                onChange={(value) => {
-                  const inc = Number(value) as 30 | 60;
-                  setTimeIncrement(inc);
-                  updateSettings({ timeIncrement: inc });
-                }}
-                options={incrementOptions}
-                placeholder="Select increment"
-              />
-              <div className="flex items-center">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.showWeekends}
-                    onChange={(e) => {
-                      setShowWeekends(e.target.checked);
-                      updateSettings({ showWeekends: e.target.checked });
-                    }}
-                    className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
-                  />
-                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Show weekends (Sat/Sun)
-                  </span>
-                </label>
-              </div>
+        <Section padded={false}>
+          <SectionHeader title="Timetable" description="Adjust how your timetable is displayed." />
+          <Card variant="elevated" className="p-6 grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Time Increment"
+              value={String(settings.timeIncrement)}
+              onChange={(value) => {
+                const inc = Number(value) as 30 | 60;
+                setTimeIncrement(inc);
+                updateSettings({ timeIncrement: inc });
+              }}
+              options={incrementOptions}
+              placeholder="Select increment"
+            />
+            <div className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.showWeekends}
+                  onChange={(e) => {
+                    setShowWeekends(e.target.checked);
+                    updateSettings({ showWeekends: e.target.checked });
+                  }}
+                  className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Show weekends (Sat/Sun)
+                </span>
+              </label>
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="col-span-2 grid gap-4 sm:grid-cols-2">
               <Input
                 label="Start Time"
                 type="time"
@@ -109,10 +113,12 @@ export function SettingsPanel() {
                 onChange={(e) => setTimeRangeEnd(e.target.value)}
               />
             </div>
-          </div>
+          </Card>
+        </Section>
 
-          <div>
-            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-4">Data</h3>
+        <Section padded={false}>
+          <SectionHeader title="Data" description="Import, export, or reset your data." />
+          <Card variant="elevated" className="p-6">
             <div className="flex flex-wrap gap-3">
               <Button variant="outline" onClick={loadSampleData}>
                 Load Sample Data
@@ -127,19 +133,19 @@ export function SettingsPanel() {
                 Danger Zone
               </Button>
             </div>
-          </div>
+          </Card>
+        </Section>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-            <Button variant="secondary" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              handleTimeRangeChange();
-              setIsOpen(false);
-            }}>
-              Save Changes
-            </Button>
-          </div>
+        <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+          <Button variant="secondary" onClick={() => setIsOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => {
+            handleTimeRangeChange();
+            setIsOpen(false);
+          }}>
+            Save Changes
+          </Button>
         </div>
       </Modal>
 
@@ -153,7 +159,8 @@ export function SettingsPanel() {
         >
           <div className="space-y-4">
             <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950">
-              <h4 className="font-medium text-amber-900 dark:text-amber-100">Clear All Data</h4>
+              <Badge variant="error" size="sm">Danger Zone</Badge>
+              <h4 className="font-medium text-amber-900 dark:text-amber-100 mt-1">Clear All Data</h4>
               <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
                 This will permanently delete all subjects, sessions, and settings. This cannot be undone.
               </p>

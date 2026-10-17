@@ -6,11 +6,11 @@ import {
   AlertTriangle,
   Hourglass,
   Flame,
-  CalendarCheck2,
 } from 'lucide-react';
 import { useFocus } from '@/hooks/useFocus';
 import { useTimetable } from '@/hooks/useTimetable';
 import { computeProgressStats, formatTotalMinutes, type DailyPoint } from '@/utils/progress';
+import { Card, Section, SectionHeader } from '@/components/ui';
 import { cn } from '@/utils/cn';
 
 function StatCard({
@@ -26,7 +26,7 @@ function StatCard({
   sub?: string;
   accent?: 'green' | 'red' | 'amber' | 'brand' | 'neutral';
 }) {
-  const accents = {
+  const accents: Record<string, string> = {
     green: 'text-green-600 dark:text-green-400',
     red: 'text-red-600 dark:text-red-400',
     amber: 'text-amber-600 dark:text-amber-400',
@@ -34,7 +34,7 @@ function StatCard({
     neutral: 'text-neutral-600 dark:text-neutral-400',
   };
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
+    <Card className="p-5">
       <div className="flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
         <span className={cn(accents[accent ?? 'neutral'])} aria-hidden="true">
           {icon}
@@ -45,7 +45,7 @@ function StatCard({
         {value}
       </p>
       {sub && <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{sub}</p>}
-    </div>
+    </Card>
   );
 }
 
@@ -68,37 +68,41 @@ function BarChart({
   const max = Math.max(1, ...points.map((p) => p[valueKey]));
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
-      <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
-      {!hasAny ? (
-        <p className="mt-3 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 px-3 py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
-          {emptyMessage}
-        </p>
-      ) : (
-        <div className="mt-4 flex h-32 items-end gap-2" role="img" aria-label={title}>
-          {points.map((point) => {
-            const value = point[valueKey];
-            const height = value > 0 ? Math.max(8, (value / max) * 100) : 4;
-            return (
-              <div key={point.date} className="flex flex-1 flex-col items-center gap-1">
-                <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400">
-                  {value > 0 ? (formatValue ? formatValue(value) : String(value)) : ''}
-                </span>
-                <div
-                  className={cn(
-                    'w-full rounded-t',
-                    value > 0 ? barClass : 'bg-neutral-100 dark:bg-neutral-800',
-                  )}
-                  style={{ height: `${height}%` }}
-                  title={`${point.label}: ${value}`}
-                />
-                <span className="text-[10px] text-neutral-500 dark:text-neutral-400">{point.label}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <Card>
+      <Card.Header>
+        <Card.Title>{title}</Card.Title>
+      </Card.Header>
+      <Card.Body className="pt-0">
+        {!hasAny ? (
+          <p className="mt-3 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 px-3 py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
+            {emptyMessage}
+          </p>
+        ) : (
+          <div className="mt-4 flex h-32 items-end gap-2" role="img" aria-label={title}>
+            {points.map((point) => {
+              const value = point[valueKey];
+              const height = value > 0 ? Math.max(8, (value / max) * 100) : 4;
+              return (
+                <div key={point.date} className="flex flex-1 flex-col items-center gap-1">
+                  <span className="text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                    {value > 0 ? (formatValue ? formatValue(value) : String(value)) : ''}
+                  </span>
+                  <div
+                    className={cn(
+                      'w-full rounded-t',
+                      value > 0 ? barClass : 'bg-neutral-100 dark:bg-neutral-800',
+                    )}
+                    style={{ height: `${height}%` }}
+                    title={`${point.label}: ${value}`}
+                  />
+                  <span className="text-[10px] text-neutral-500 dark:text-neutral-400">{point.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
 
@@ -123,60 +127,80 @@ export function ProgressDashboard() {
           </div>
         </header>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard
-            icon={<CheckCircle2 className="h-4 w-4" />}
-            label="Homework done"
-            value={stats.homework.hasAnyHomework ? `${stats.homework.completed} / ${stats.homework.total}` : '—'}
-            sub={
-              stats.homework.hasAnyHomework
-                ? stats.homework.completedDateUnknown > 0
-                  ? `${stats.homework.completedDateUnknown} completed before dates were tracked`
-                  : 'Completed or submitted'
-                : 'No homework data yet'
-            }
-            accent="green"
-          />
-          <StatCard
-            icon={<Hourglass className="h-4 w-4" />}
-            label="Pending"
-            value={stats.homework.hasAnyHomework ? String(stats.homework.pending) : '—'}
-            sub={stats.homework.hasAnyHomework ? 'Not yet overdue' : 'No homework data yet'}
-            accent="neutral"
-          />
-          <StatCard
-            icon={<AlertTriangle className="h-4 w-4" />}
-            label="Overdue"
-            value={stats.homework.hasAnyHomework ? String(stats.homework.overdue) : '—'}
-            sub={stats.homework.hasAnyHomework ? 'Past due date' : 'No homework data yet'}
-            accent={stats.homework.overdue > 0 ? 'red' : 'neutral'}
-          />
-          <StatCard
-            icon={<Flame className="h-4 w-4" />}
-            label="Focus time"
-            value={stats.focus.hasAnySession ? formatTotalMinutes(stats.focus.totalFocusMinutes) : '—'}
-            sub={
-              stats.focus.hasAnySession
-                ? `${stats.focus.completedSessions} completed session${stats.focus.completedSessions === 1 ? '' : 's'}${
-                    stats.focus.averageSessionMinutes !== null
-                      ? ` · avg ${stats.focus.averageSessionMinutes}m`
-                      : ''
-                  }`
-                : 'No focus sessions yet'
-            }
-            accent="brand"
-          />
-        </div>
+        <Section padded={false}>
+          <Section.Header>
+            <SectionHeader title="Overview" description="Your key metrics at a glance." />
+          </Section.Header>
+          <Section.Body>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <StatCard
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                label="Homework done"
+                value={stats.homework.hasAnyHomework ? `${stats.homework.completed} / ${stats.homework.total}` : '—'}
+                sub={
+                  stats.homework.hasAnyHomework
+                    ? stats.homework.completedDateUnknown > 0
+                      ? `${stats.homework.completedDateUnknown} completed before dates were tracked`
+                      : 'Completed or submitted'
+                    : 'No homework data yet'
+                }
+                accent="green"
+              />
+              <StatCard
+                icon={<Hourglass className="h-4 w-4" />}
+                label="Pending"
+                value={stats.homework.hasAnyHomework ? String(stats.homework.pending) : '—'}
+                sub={stats.homework.hasAnyHomework ? 'Not yet overdue' : 'No homework data yet'}
+                accent="neutral"
+              />
+              <StatCard
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label="Overdue"
+                value={stats.homework.hasAnyHomework ? String(stats.homework.overdue) : '—'}
+                sub={stats.homework.hasAnyHomework ? 'Past due date' : 'No homework data yet'}
+                accent={stats.homework.overdue > 0 ? 'red' : 'neutral'}
+              />
+              <StatCard
+                icon={<Flame className="h-4 w-4" />}
+                label="Focus time"
+                value={stats.focus.hasAnySession ? formatTotalMinutes(stats.focus.totalFocusMinutes) : '—'}
+                sub={
+                  stats.focus.hasAnySession
+                    ? `${stats.focus.completedSessions} completed session${stats.focus.completedSessions === 1 ? '' : 's'}${
+                        stats.focus.averageSessionMinutes !== null
+                          ? ` · avg ${stats.focus.averageSessionMinutes}m`
+                          : ''
+                      }`
+                    : 'No focus sessions yet'
+                }
+                accent="brand"
+              />
+            </div>
+          </Section.Body>
+        </Section>
 
         {stats.focus.interruptedSessions > 0 && (
-          <p className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-            {stats.focus.interruptedSessions} interrupted session
-            {stats.focus.interruptedSessions === 1 ? '' : 's'} (
-            {formatTotalMinutes(stats.focus.totalUnverifiedMinutes)} wall-clock) could not be verified
-            as completed — they are excluded from focus time on purpose.
-            {stats.focus.cancelledSessions > 0 &&
-              ` ${stats.focus.cancelledSessions} cancelled session${stats.focus.cancelledSessions === 1 ? '' : 's'} also excluded.`}
-          </p>
+          <Card variant="elevated" className="border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40">
+            <Card.Body className="px-6 py-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" aria-hidden="true" />
+                <div>
+                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    {stats.focus.interruptedSessions} interrupted session
+                    {stats.focus.interruptedSessions === 1 ? '' : 's'} (
+                    {formatTotalMinutes(stats.focus.totalUnverifiedMinutes)} wall-clock) could not be verified
+                    as completed — they are excluded from focus time on purpose.
+                  </span>
+                  {stats.focus.cancelledSessions > 0 && (
+                    <span className="text-xs text-amber-600 dark:text-amber-300 ml-1">
+                      {stats.focus.cancelledSessions} cancelled session
+                      {stats.focus.cancelledSessions === 1 ? '' : 's'} also excluded.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -207,85 +231,82 @@ export function ProgressDashboard() {
           />
         </div>
 
-        <section
-          className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
-          aria-label="Subject breakdown"
-        >
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-            Subject breakdown
-          </h3>
-          {!stats.homework.hasAnyHomework ? (
-            <p className="mt-3 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 px-3 py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
-              Add homework to see per-subject progress.
-            </p>
-          ) : (
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-                    <th className="py-2 pr-4 font-medium">Subject</th>
-                    <th className="py-2 pr-4 font-medium text-right">Total</th>
-                    <th className="py-2 pr-4 font-medium text-right">Done</th>
-                    <th className="py-2 pr-4 font-medium text-right">Pending</th>
-                    <th className="py-2 font-medium text-right">Overdue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.subjects.map((s) => (
-                    <tr
-                      key={s.subject}
-                      className="border-b border-neutral-100 dark:border-neutral-800/60 last:border-0"
-                    >
-                      <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-neutral-100">
-                        {s.subject}
-                      </td>
-                      <td className="py-2 pr-4 text-right tabular-nums text-neutral-600 dark:text-neutral-300">
-                        {s.total}
-                      </td>
-                      <td className="py-2 pr-4 text-right tabular-nums text-green-600 dark:text-green-400">
-                        {s.completed}
-                      </td>
-                      <td className="py-2 pr-4 text-right tabular-nums text-neutral-600 dark:text-neutral-300">
-                        {s.pending}
-                      </td>
-                      <td
-                        className={cn(
-                          'py-2 text-right tabular-nums',
-                          s.overdue > 0
-                            ? 'text-red-600 dark:text-red-400 font-medium'
-                            : 'text-neutral-600 dark:text-neutral-300',
-                        )}
-                      >
-                        {s.overdue}
-                      </td>
+        <Section padded={false}>
+          <Section.Header>
+            <SectionHeader title="Subject breakdown" description="Per-subject progress across all homework." />
+          </Section.Header>
+          <Section.Body>
+            {!stats.homework.hasAnyHomework ? (
+              <p className="mt-3 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 px-3 py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
+                Add homework to see per-subject progress.
+              </p>
+            ) : (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-800 text-left text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                      <th className="py-2 pr-4 font-medium">Subject</th>
+                      <th className="py-2 pr-4 font-medium text-right">Total</th>
+                      <th className="py-2 pr-4 font-medium text-right">Done</th>
+                      <th className="py-2 pr-4 font-medium text-right">Pending</th>
+                      <th className="py-2 font-medium text-right">Overdue</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+                  </thead>
+                  <tbody>
+                    {stats.subjects.map((s) => (
+                      <tr
+                        key={s.subject}
+                        className="border-b border-neutral-100 dark:border-neutral-800/60 last:border-0"
+                      >
+                        <td className="py-2 pr-4 font-medium text-neutral-900 dark:text-neutral-100">
+                          {s.subject}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums text-neutral-600 dark:text-neutral-300">
+                          {s.total}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums text-green-600 dark:text-green-400">
+                          {s.completed}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums text-neutral-600 dark:text-neutral-300">
+                          {s.pending}
+                        </td>
+                        <td
+                          className={cn(
+                            'py-2 text-right tabular-nums',
+                            s.overdue > 0
+                              ? 'text-red-600 dark:text-red-400 font-medium'
+                              : 'text-neutral-600 dark:text-neutral-300',
+                          )}
+                        >
+                          {s.overdue}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Section.Body>
+        </Section>
 
-        <section
-          className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
-          aria-label="Weekly homework completion"
-        >
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-            <CalendarCheck2 className="h-4 w-4 text-neutral-400" aria-hidden="true" />
-            This week
-          </h3>
-          {stats.homework.hasAnyHomework ? (
-            <p className="mt-2 flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-              <Clock3 className="h-4 w-4 text-neutral-400" aria-hidden="true" />
-              {stats.homework.completedThisWeek} homework item
-              {stats.homework.completedThisWeek === 1 ? '' : 's'} marked complete in the last 7 days.
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-              No homework data yet — statistics will appear once you add or sync homework.
-            </p>
-          )}
-        </section>
+        <Section padded={false}>
+          <Section.Header>
+            <SectionHeader title="This week" description="Homework completion over the last 7 days." />
+          </Section.Header>
+          <Section.Body className="pt-0">
+            {stats.homework.hasAnyHomework ? (
+              <p className="mt-2 flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+                <Clock3 className="h-4 w-4 text-neutral-400" aria-hidden="true" />
+                {stats.homework.completedThisWeek} homework item
+                {stats.homework.completedThisWeek === 1 ? '' : 's'} marked complete in the last 7 days.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+                No homework data yet — statistics will appear once you add or sync homework.
+              </p>
+            )}
+          </Section.Body>
+        </Section>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import { FocusMode } from '@/components/focus/FocusMode';
 import { ProgressDashboard } from '@/components/progress/ProgressDashboard';
 import { StudyPlanner } from '@/components/planner/StudyPlanner';
 import { ToastProvider } from '@/components/ui/Toast';
+import { SkipLink } from '@/components/ui/SkipLink';
 import { TimetableLayoutProvider } from '@/context/TimetableLayoutContext';
 import { CalendarProvider } from '@/context/CalendarContext';
 import { useTimetable } from '@/hooks/useTimetable';
@@ -60,9 +61,10 @@ function AppContent() {
 
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
+      <SkipLink />
       <Header />
       <CalendarNav />
-      <Toolbar onAddSession={handleAddSession} />
+      <Toolbar onAddSession={handleAddSession} onImport={handleImportOpen} />
 
       <div className="flex-1 flex overflow-hidden">
         <aside className="hidden lg:block w-72 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-auto">
@@ -148,7 +150,7 @@ function AppContent() {
           </nav>
         </aside>
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main id="main-content" className="flex-1 flex flex-col overflow-hidden">
           {activeTab === 'timetable' ? (
             <div className="flex-1 flex flex-col overflow-hidden">
               {showMainContent ? (

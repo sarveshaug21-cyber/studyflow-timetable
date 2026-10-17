@@ -3,11 +3,13 @@ import { HomeworkItem } from '@/types';
 import { format } from 'date-fns';
 import { AlertCircle, CheckCircle, Clock, Filter, ChevronDown, Download, Upload, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { getOverdueHomeworkFromArray } from '@/context/TimetableContext';
 import { HomeworkEditor } from './HomeworkEditor';
+import { cn } from '@/utils/cn';
 
 type HomeworkFilter = 'all' | 'upcoming' | 'overdue' | 'completed';
 type SortOrder = 'dueDate-asc' | 'dueDate-desc' | 'subject-asc' | 'subject-desc';
@@ -281,16 +283,18 @@ export function HomeworkView({
       </div>
 
       {filteredHomework.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <svg className="h-16 w-16 text-neutral-300 dark:text-neutral-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-          </svg>
+        <Card className="p-8 text-center max-w-md mx-auto">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 dark:bg-brand-900/30 mx-auto mb-4">
+            <svg className="h-8 w-8 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
           <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">No homework found</h3>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
             {searchQuery ? 'Try adjusting your search or filters' : 'Import from file or add manually to get started'}
           </p>
           {!searchQuery && filter === 'all' && (
-            <div className="mt-4 flex gap-2">
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
               <Button onClick={handleAddHomework} className="gap-2">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -303,7 +307,7 @@ export function HomeworkView({
               </Button>
             </div>
           )}
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {(['Overdue', 'Upcoming', 'Completed'] as const).map((section) => {
@@ -318,8 +322,18 @@ export function HomeworkView({
                   </h2>
                 </div>
                 <div className="space-y-2">
-                  {items.map((item) => (
-                    <article
+                  {items.map((item) => {
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    const dueDate = new Date(item.dueDate);
+                    dueDate.setHours(0, 0, 0, 0);
+                    const isOverdue =
+                      item.status !== 'completed' &&
+                      item.status !== 'submitted' &&
+                      dueDate < now;
+
+                    return (
+                      <article
                       key={item.id}
                       className="group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
                     >
@@ -341,7 +355,16 @@ export function HomeworkView({
                         <div className="flex items-center gap-3 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
-                            Due: {format(new Date(item.dueDate), 'EEE, MMM d, yyyy')}
+                            <span
+                              className={cn(
+                                'font-medium',
+                                isOverdue
+                                  ? 'text-red-700 dark:text-red-400'
+                                  : 'text-neutral-600 dark:text-neutral-300',
+                              )}
+                            >
+                              Due: {format(new Date(item.dueDate), 'EEE, MMM d, yyyy')}
+                            </span>
                           </span>
                           <span className="flex items-center gap-1">
                             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -387,8 +410,9 @@ export function HomeworkView({
                         </Button>
                       </div>
                     </article>
-                  ))}
-                </div>
+                  );
+                })}
+              </div>
               </section>
             );
           })}

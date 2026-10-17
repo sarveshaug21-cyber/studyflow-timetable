@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, FileJson, FileText, Calendar, Image, X } from 'lucide-react';
+import { Download, FileJson, FileText, Calendar, Image, Upload, X } from 'lucide-react';
 import { useTimetable } from '@/hooks/useTimetable';
 import { exportToJSON, exportToCSV, exportToICS, exportToPNG, downloadFile, downloadBlob } from '@/utils/export';
 import { Button, DropdownItem } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/utils/cn';
 
-export function ExportMenu() {
+export interface ExportMenuProps {
+  onImport?: () => void;
+}
+
+export function ExportMenu({ onImport }: ExportMenuProps = {}) {
   const { state } = useTimetable();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -61,11 +65,18 @@ export function ExportMenu() {
     }
   };
 
+  const handleImport = () => {
+    setIsOpen(false);
+    onImport?.();
+  };
+
   const items: DropdownItem[] = [
     { label: 'JSON', value: 'json', icon: <FileJson className="h-4 w-4" />, shortcut: 'Ctrl+J' },
     { label: 'CSV', value: 'csv', icon: <FileText className="h-4 w-4" />, shortcut: 'Ctrl+Shift+C' },
     { label: 'ICS Calendar', value: 'ics', icon: <Calendar className="h-4 w-4" /> },
     { label: 'PNG Image', value: 'png', icon: <Image className="h-4 w-4" /> },
+    { type: 'divider' },
+    { label: 'Import from File', value: 'import', icon: <Upload className="h-4 w-4" />, shortcut: 'Ctrl+Shift+I' },
   ];
 
   return (
@@ -79,28 +90,41 @@ export function ExportMenu() {
         className="gap-1.5"
       >
         <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">Export</span>
+        <span className="hidden sm:inline">Import/Export</span>
         <X className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
       </Button>
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 min-w-[180px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-elevated overflow-hidden animate-slide-in">
-          {items.map(item => (
-            <button
-              key={item.value}
-              onClick={() => handleExport(item.value as 'json' | 'csv' | 'ics' | 'png')}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-              role="menuitem"
-              tabIndex={-1}
-            >
-              {item.icon && <span className="flex h-4 w-4">{item.icon}</span>}
-              <span className="flex-1 text-left">{item.label}</span>
-              {item.shortcut && (
-                <kbd className="px-1.5 py-0.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 rounded">
-                  {item.shortcut}
-                </kbd>
-              )}
-            </button>
-          ))}
+        <div className="absolute right-0 z-50 mt-2 min-w-[200px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-elevated overflow-hidden animate-slide-in">
+          {items.map((item) => {
+            if (item.type === 'divider') {
+              return (
+                <div key="divider" className="h-px bg-neutral-200 dark:bg-neutral-800 my-1" />
+              );
+            }
+            const isImport = item.value === 'import';
+            return (
+              <button
+                key={item.value}
+                onClick={isImport ? handleImport : () => handleExport(item.value as 'json' | 'csv' | 'ics' | 'png')}
+                className={cn(
+                  'flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors',
+                  isImport
+                    ? 'text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20'
+                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                )}
+                role="menuitem"
+                tabIndex={-1}
+              >
+                {item.icon && <span className="flex h-4 w-4">{item.icon}</span>}
+                <span className="flex-1 text-left">{item.label}</span>
+                {item.shortcut && (
+                  <kbd className="px-1.5 py-0.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 rounded">
+                    {item.shortcut}
+                  </kbd>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
