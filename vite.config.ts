@@ -26,6 +26,7 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom'],
           'vendor-ui': ['lucide-react', 'clsx', 'tailwind-merge'],
           'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'vendor-calendar': ['@fullcalendar/react', '@fullcalendar/core', 'temporal-polyfill'],
           'vendor-date': ['date-fns'],
           'vendor-export': ['ics', 'html2canvas'],
         },

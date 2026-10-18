@@ -6,6 +6,7 @@ import { SettingsProvider } from '@/context/SettingsContext'
 import { FocusProvider } from '@/context/FocusContext'
 import App from './App'
 import './index.css'
+import 'temporal-polyfill'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -3,7 +3,7 @@ import { useTimetable } from '@/hooks/useTimetable';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui';
-import type { Session, Subject } from '@/types';
+import type { Session, Subject, DayOfWeek, RecurrenceFrequency } from '@/types';
 import { getTimeSlots } from '@/utils/date';
 
 interface SessionEditorProps {
@@ -19,21 +19,39 @@ export function SessionEditor({ isOpen, onClose, onSubmit, initialData, subjects
   const [formData, setFormData] = useState<{
     subjectId: string;
     day: 1 | 2 | 3 | 4 | 5 | 6 | 0;
+    startDate: string;
+    endDate: string;
     startTime: string;
     endTime: string;
     type: Session['type'];
     location: string;
     notes: string;
     recurring: boolean;
+    recurrenceRule: RecurrenceFrequency | undefined;
+    recurrenceWeekdays: DayOfWeek[];
+    recurrenceStartDate: string;
+    recurrenceEndDate: string;
+    recurrenceMaxOccurrences: number | undefined;
+    allDay: boolean;
+    overnight: boolean;
   }>({
     subjectId: initialData?.subjectId || '',
     day: initialData?.day || 1,
+    startDate: initialData?.date || '',
+    endDate: initialData?.endDate || '',
     startTime: initialData?.startTime || state.timeRange.start,
     endTime: initialData?.endTime || '',
     type: initialData?.type || 'lecture' as Session['type'],
     location: initialData?.location || '',
     notes: initialData?.notes || '',
     recurring: initialData?.recurring ?? true,
+    recurrenceRule: initialData?.recurrenceRule,
+    recurrenceWeekdays: initialData?.recurrenceWeekdays ?? [],
+    recurrenceStartDate: initialData?.recurrenceStartDate || '',
+    recurrenceEndDate: initialData?.recurrenceEndDate || '',
+    recurrenceMaxOccurrences: initialData?.recurrenceMaxOccurrences,
+    allDay: initialData?.allDay ?? false,
+    overnight: initialData?.overnight ?? false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -59,10 +77,40 @@ export function SessionEditor({ isOpen, onClose, onSubmit, initialData, subjects
     const newErrors: Record<string, string> = {};
 
     if (!formData.subjectId) newErrors.subjectId = 'Subject is required';
-    if (!formData.startTime) newErrors.startTime = 'Start time is required';
-    if (!formData.endTime) newErrors.endTime = 'End time is required';
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+    if (!formData.recurring && !formData.startDate) newErrors.startDate = 'Start date is required';
+    if (!formData.allDay && !formData.startTime) newErrors.startTime = 'Start time is required';
+    if (!formData.allDay && !formData.endTime) newErrors.endTime = 'End time is required';
+    if (
+      !formData.allDay &&
+      !formData.overnight &&
+      formData.startTime &&
+      formData.endTime &&
+      formData.startTime >= formData.endTime
+    ) {
       newErrors.endTime = 'End time must be after start time';
+    }
+    if (
+      formData.overnight &&
+      formData.startTime &&
+      formData.endTime &&
+      formData.startTime === formData.endTime
+    ) {
+      newErrors.endTime = 'Overnight session must have a different end time.';
+    }
+    if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+      newErrors.endDate = 'End date must be on or after the start date';
+    }
+    // Recurrence validation.
+    if (formData.recurring && formData.recurrenceRule) {
+      if (formData.recurrenceRule !== 'weekly' && formData.recurrenceWeekdays.length > 0) {
+        newErrors.recurrenceWeekdays = 'Weekdays only apply to weekly recurrence.';
+      }
+      if (formData.recurrenceEndDate && formData.recurrenceStartDate && formData.recurrenceEndDate < formData.recurrenceStartDate) {
+        newErrors.recurrenceEndDate = 'End date must be on or after the start date.';
+      }
+      if (formData.recurrenceMaxOccurrences !== undefined && formData.recurrenceMaxOccurrences < 1) {
+        newErrors.recurrenceMaxOccurrences = 'Must be at least 1.';
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -70,20 +118,47 @@ export function SessionEditor({ isOpen, onClose, onSubmit, initialData, subjects
       return;
     }
 
+    const day = formData.recurring
+      ? formData.day
+      : new Date(formData.startDate).getDay() as Session['day'];
+
+    const overnight = formData.overnight && !formData.allDay && !formData.recurring;
+
     onSubmit({
       subjectId: formData.subjectId,
-      day: Number(formData.day) as Session['day'],
-      startTime: formData.startTime,
-      endTime: formData.endTime,
+      day,
+      startTime: formData.allDay ? '00:00' : formData.startTime,
+      endTime: formData.allDay ? '23:59' : formData.endTime,
       type: formData.type,
       location: formData.location,
       notes: formData.notes,
       recurring: formData.recurring,
+      allDay: formData.allDay,
+      overnight,
+      // One-off sessions carry an explicit date range; recurring sessions do not.
+      ...(formData.recurring
+        ? {
+            recurrenceRule: formData.recurrenceRule,
+            ...(formData.recurrenceRule === 'weekly' && formData.recurrenceWeekdays.length > 0
+              ? { recurrenceWeekdays: formData.recurrenceWeekdays }
+              : {}),
+            ...(formData.recurrenceStartDate ? { recurrenceStartDate: formData.recurrenceStartDate } : {}),
+            ...(formData.recurrenceEndDate ? { recurrenceEndDate: formData.recurrenceEndDate } : {}),
+            ...(formData.recurrenceMaxOccurrences !== undefined
+              ? { recurrenceMaxOccurrences: formData.recurrenceMaxOccurrences }
+              : {}),
+          }
+        : {
+            date: formData.startDate,
+            endDate: formData.endDate || undefined,
+          }),
     });
     onClose();
   };
 
-  const endTimeOptions = timeSlots.filter(t => t > formData.startTime);
+  const endTimeOptions = formData.overnight
+    ? timeSlots
+    : timeSlots.filter(t => t > formData.startTime);
 
   return (
     <Modal
@@ -139,37 +214,66 @@ export function SessionEditor({ isOpen, onClose, onSubmit, initialData, subjects
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label">Start Time</label>
-            <select
-              value={formData.startTime}
-              onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
-              className="input"
-              required
-            >
-              {timeSlots.map(time => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
-            {errors.startTime && <p className="text-sm text-red-600 mt-1">{errors.startTime}</p>}
-          </div>
+        {!formData.recurring && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Start date</label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                className="input"
+                required
+              />
+              {errors.startDate && <p className="text-sm text-red-600 mt-1">{errors.startDate}</p>}
+            </div>
 
-          <div>
-            <label className="label">End Time</label>
-            <select
-              value={formData.endTime}
-              onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
-              className="input"
-              required
-            >
-              {endTimeOptions.map(time => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
-            {errors.endTime && <p className="text-sm text-red-600 mt-1">{errors.endTime}</p>}
+            <div>
+              <label className="label">End date (multi-day)</label>
+              <input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                className="input"
+              />
+              {errors.endDate && <p className="text-sm text-red-600 mt-1">{errors.endDate}</p>}
+            </div>
           </div>
-        </div>
+        )}
+
+        {!formData.allDay && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Start Time</label>
+              <select
+                value={formData.startTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                className="input"
+                required
+              >
+                {timeSlots.map(time => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+              {errors.startTime && <p className="text-sm text-red-600 mt-1">{errors.startTime}</p>}
+            </div>
+
+            <div>
+              <label className="label">End Time</label>
+              <select
+                value={formData.endTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                className="input"
+                required
+              >
+                {endTimeOptions.map(time => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+              {errors.endTime && <p className="text-sm text-red-600 mt-1">{errors.endTime}</p>}
+            </div>
+          </div>
+        )}
 
         <Input
           label="Location (optional)"
@@ -200,6 +304,109 @@ export function SessionEditor({ isOpen, onClose, onSubmit, initialData, subjects
             Recurring weekly
           </label>
         </div>
+
+        {formData.recurring && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Recurrence frequency</label>
+              <select
+                value={formData.recurrenceRule || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, recurrenceRule: e.target.value as RecurrenceFrequency || undefined, recurrenceWeekdays: e.target.value === 'weekly' ? [prev.day] : [] }))}
+                className="input"
+              >
+                <option value="">Weekly forever</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="label">Repeat starts</label>
+              <input
+                type="date"
+                value={formData.recurrenceStartDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, recurrenceStartDate: e.target.value }))}
+                className="input"
+              />
+            </div>
+
+            <div>
+              <label className="label">Repeat ends</label>
+              <input
+                type="date"
+                value={formData.recurrenceEndDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, recurrenceEndDate: e.target.value }))}
+                className="input"
+              />
+            </div>
+
+            <div>
+              <label className="label">Max occurrences</label>
+              <input
+                type="number"
+                value={formData.recurrenceMaxOccurrences ?? ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, recurrenceMaxOccurrences: e.target.value ? Number(e.target.value) : undefined }))}
+                className="input"
+                min="1"
+              />
+            </div>
+          </div>
+        )}
+
+        {formData.recurring && formData.recurrenceRule === 'weekly' && (
+              <div className="grid gap-4 sm:grid-cols-3">
+            {dayOptions.map((opt) => (
+              <div key={opt.value} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`weekday-${opt.value}`}
+                  checked={formData.recurrenceWeekdays.includes(opt.value as unknown as DayOfWeek)}
+                  onChange={(e) => {
+                    const val = opt.value as unknown as DayOfWeek;
+                    setFormData(prev => ({
+                      ...prev,
+                      recurrenceWeekdays: e.target.checked
+                        ? [...prev.recurrenceWeekdays, val]
+                        : prev.recurrenceWeekdays.filter((d) => d !== val),
+                    }));
+                  }}
+                  className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+                />
+                <label htmlFor={`weekday-${opt.value}`} className="text-sm text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                  {opt.label}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="allDay"
+            checked={formData.allDay}
+            onChange={(e) => setFormData(prev => ({ ...prev, allDay: e.target.checked }))}
+            className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+          />
+          <label htmlFor="allDay" className="text-sm font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer">
+            All-day event
+          </label>
+        </div>
+
+        {!formData.allDay && !formData.recurring && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="overnight"
+              checked={formData.overnight}
+              onChange={(e) => setFormData(prev => ({ ...prev, overnight: e.target.checked }))}
+              className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+            />
+            <label htmlFor="overnight" className="text-sm font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer">
+              Overnight (spans midnight)
+            </label>
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
           <Button type="button" variant="secondary" onClick={onClose}>

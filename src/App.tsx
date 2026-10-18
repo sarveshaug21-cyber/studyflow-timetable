@@ -1,8 +1,7 @@
 import { Header } from '@/components/layout';
 import { Toolbar } from '@/components/layout/Toolbar';
-import { TimetableGrid } from '@/components/timetable';
-import { AgendaView } from '@/components/agenda';
-import { MonthView, DayView, CalendarNav } from '@/components/calendar';
+import { FullCalendarView } from '@/components/calendar';
+import { CalendarNav } from '@/components/calendar';
 import { SubjectManager } from '@/components/subjects';
 import { SessionEditor } from '@/components/sessions';
 import { EmptyState } from '@/components/timetable/EmptyState';
@@ -17,6 +16,7 @@ import { TimetableLayoutProvider } from '@/context/TimetableLayoutContext';
 import { CalendarProvider } from '@/context/CalendarContext';
 import { useTimetable } from '@/hooks/useTimetable';
 import { useCalendar } from '@/hooks/useCalendar';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useState } from 'react';
 import { Timer, BarChart3, CalendarClock } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -32,7 +32,7 @@ function AppContent() {
     updateHomework,
     removeHomework,
   } = useTimetable();
-  const { view } = useCalendar();
+  const { goToToday, next, prev, setView } = useCalendar();
   const [sessionEditorOpen, setSessionEditorOpen] = useState(false);
   const [initialSessionData, setInitialSessionData] = useState<Partial<import('@/types').Session> | null>(null);
   const [activeTab, setActiveTab] = useState<AppTab>('timetable');
@@ -47,6 +47,14 @@ function AppContent() {
     addSession(sessionData);
     setSessionEditorOpen(false);
   };
+
+  useKeyboardShortcuts({
+    goToToday,
+    next,
+    prev,
+    setView,
+    onAddSession: handleAddSession,
+  });
 
   const handleImportOpen = () => setImportDialogOpen(true);
 
@@ -154,13 +162,7 @@ function AppContent() {
           {activeTab === 'timetable' ? (
             <div className="flex-1 flex flex-col overflow-hidden">
               {showMainContent ? (
-                view === 'weekly'
-                  ? <TimetableGrid />
-                  : view === 'day'
-                  ? <DayView />
-                  : view === 'month'
-                  ? <MonthView />
-                  : <AgendaView />
+                <FullCalendarView />
               ) : (
                 <EmptyState />
               )}

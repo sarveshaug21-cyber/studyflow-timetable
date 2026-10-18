@@ -13,13 +13,25 @@ interface SessionBlockProps {
   subject: Subject;
   top: number;
   height: number;
+  /** Left position as a percentage (for column-based overlap layout). */
+  left?: number;
+  /** Width as a percentage (for column-based overlap layout). */
+  width?: number;
 }
 
-export function SessionBlock({ session, subject, top, height }: SessionBlockProps) {
+export function SessionBlock({
+  session,
+  subject,
+  top,
+  height,
+  left,
+  width,
+}: SessionBlockProps) {
   const { deleteSession, updateSession } = useTimetable();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const textColor = getContrastColor(subject.color);
+  const isAllDay = session.allDay;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `move:${session.id}`,
@@ -41,13 +53,21 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
         {...attributes}
         {...listeners}
         className={cn(
-          'absolute left-1 right-1 rounded-lg transition-all duration-150 hover:shadow-md hover:scale-[1.01] z-10 group',
-          'group-focus-within:z-20'
+          'absolute rounded-lg transition-all duration-150 hover:shadow-md hover:scale-[1.01] z-10 group',
+          'group-focus-within:z-20',
+          isAllDay ? 'top-0 left-0 right-0 h-auto min-h-auto' : '',
+          (!isAllDay && (left === undefined || width === undefined))
+            ? 'left-1 right-1'
+            : '',
         )}
         style={{
-          top: top,
-          height: height,
-          minHeight: '32px',
+          ...(!isAllDay && {
+            top: top,
+            height: height,
+            minHeight: '32px',
+            ...(left !== undefined && { left: `${left}%` }),
+            ...(width !== undefined && { width: `${width}%` }),
+          }),
           backgroundColor: subject.color,
           color: textColor,
           ...(isDragging && transform && {
@@ -57,7 +77,13 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
         } as React.CSSProperties}
         role="button"
         tabIndex={0}
-        aria-label={`${subject.code}: ${subject.name}, ${session.startTime} - ${session.endTime}`}
+        aria-label={
+          isAllDay
+            ? `${subject.code}: ${subject.name} (All day)`
+            : session.overnight
+              ? `${subject.code}: ${subject.name}, ${session.startTime} - ${session.endTime} (overnight)`
+              : `${subject.code}: ${subject.name}, ${session.startTime} - ${session.endTime}`
+        }
         onClick={() => setEditOpen(true)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -73,8 +99,12 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
         <div className="p-2 h-full flex flex-col justify-between">
           <div className="flex items-start justify-between gap-1">
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-sm truncate">{subject.code}</p>
-              <p className="text-xs truncate opacity-90">{subject.name}</p>
+              <p className={cn('font-medium text-sm truncate', isAllDay && 'text-lg')}>
+                {subject.code}
+              </p>
+              <p className={cn('text-xs truncate opacity-90', isAllDay && 'text-sm')}>
+                {subject.name}
+              </p>
             </div>
             <Dropdown
               trigger={
@@ -106,19 +136,27 @@ export function SessionBlock({ session, subject, top, height }: SessionBlockProp
               }}
             />
           </div>
-          <div className="flex items-end justify-between gap-1 mt-1">
-            <span className="text-xs font-mono">{session.startTime} - {session.endTime}</span>
-            {session.location && (
-              <span className="text-xs opacity-90 truncate max-w-[60px]">{session.location}</span>
-            )}
-            <div
-              ref={resizeRef}
-              {...resizeAttributes}
-              {...resizeListeners}
-              className="absolute right-0 bottom-0 w-1.5 h-1.5 cursor-ns-resize bg-brand-400/60 hover:bg-brand-400 rounded-md"
-              aria-label="Resize session"
-            />
-          </div>
+          {!isAllDay && (
+            <div className="flex items-end justify-between gap-1 mt-1">
+              <span className="text-xs font-mono">
+                {session.overnight
+                  ? `${session.startTime} – ${session.endTime} (overnight)`
+                  : `${session.startTime} - ${session.endTime}`}
+              </span>
+              {session.location && (
+                <span className="text-xs opacity-90 truncate max-w-[60px]">{session.location}</span>
+              )}
+              {!session.overnight && (
+                <div
+                  ref={resizeRef}
+                  {...resizeAttributes}
+                  {...resizeListeners}
+                  className="absolute right-0 bottom-0 w-1.5 h-1.5 cursor-ns-resize bg-brand-400/60 hover:bg-brand-400 rounded-md"
+                  aria-label="Resize session"
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -154,7 +192,17 @@ interface SessionEditorModalProps {
 
 function SessionEditorModal({ isOpen, onClose, session, onUpdate }: SessionEditorModalProps) {
   const { state } = useTimetable();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    subjectId: string;
+    day: 1 | 2 | 3 | 4 | 5 | 6 | 0;
+    startTime: string;
+    endTime: string;
+    type: Session['type'];
+    location: string;
+    notes: string;
+    recurring: boolean;
+    allDay: boolean;
+  }>({
     subjectId: session.subjectId,
     day: session.day,
     startTime: session.startTime,
@@ -163,6 +211,7 @@ function SessionEditorModal({ isOpen, onClose, session, onUpdate }: SessionEdito
     location: session.location || '',
     notes: session.notes || '',
     recurring: session.recurring,
+    allDay: session.allDay ?? false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -194,9 +243,9 @@ function SessionEditorModal({ isOpen, onClose, session, onUpdate }: SessionEdito
     const newErrors: Record<string, string> = {};
 
     if (!formData.subjectId) newErrors.subjectId = 'Subject is required';
-    if (!formData.startTime) newErrors.startTime = 'Start time is required';
-    if (!formData.endTime) newErrors.endTime = 'End time is required';
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+    if (!formData.allDay && !formData.startTime) newErrors.startTime = 'Start time is required';
+    if (!formData.allDay && !formData.endTime) newErrors.endTime = 'End time is required';
+    if (!formData.allDay && formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
       newErrors.endTime = 'End time must be after start time';
     }
 
@@ -209,6 +258,9 @@ function SessionEditorModal({ isOpen, onClose, session, onUpdate }: SessionEdito
       ...session,
       ...formData,
       day: formData.day as Session['day'],
+      startTime: formData.allDay ? '00:00' : formData.startTime,
+      endTime: formData.allDay ? '23:59' : formData.endTime,
+      allDay: formData.allDay,
     });
     onClose();
   };
@@ -266,37 +318,39 @@ function SessionEditorModal({ isOpen, onClose, session, onUpdate }: SessionEdito
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label">Start Time</label>
-            <select
-              value={formData.startTime}
-              onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
-              className="input"
-              required
-            >
-              {timeSlots.map(time => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
-            {errors.startTime && <p className="text-sm text-red-600 mt-1">{errors.startTime}</p>}
-          </div>
+        {!formData.allDay && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Start Time</label>
+              <select
+                value={formData.startTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                className="input"
+                required
+              >
+                {timeSlots.map(time => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+              {errors.startTime && <p className="text-sm text-red-600 mt-1">{errors.startTime}</p>}
+            </div>
 
-          <div>
-            <label className="label">End Time</label>
-            <select
-              value={formData.endTime}
-              onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
-              className="input"
-              required
-            >
-              {timeSlots.map(time => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
-            {errors.endTime && <p className="text-sm text-red-600 mt-1">{errors.endTime}</p>}
+            <div>
+              <label className="label">End Time</label>
+              <select
+                value={formData.endTime}
+                onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                className="input"
+                required
+              >
+                {timeSlots.map(time => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+              {errors.endTime && <p className="text-sm text-red-600 mt-1">{errors.endTime}</p>}
+            </div>
           </div>
-        </div>
+        )}
 
         <div>
           <label className="label">Location</label>
@@ -329,6 +383,18 @@ function SessionEditorModal({ isOpen, onClose, session, onUpdate }: SessionEdito
           />
           <label htmlFor="recurring" className="text-sm font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer">
             Recurring weekly
+          </label>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="allDay"
+            checked={formData.allDay}
+            onChange={(e) => setFormData(prev => ({ ...prev, allDay: e.target.checked }))}
+            className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+          />
+          <label htmlFor="allDay" className="text-sm font-medium text-neutral-700 dark:text-neutral-300 cursor-pointer">
+            All-day event
           </label>
         </div>
 

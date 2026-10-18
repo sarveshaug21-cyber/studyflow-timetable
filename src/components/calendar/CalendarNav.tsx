@@ -2,6 +2,7 @@ import { format, addDays } from 'date-fns';
 import { useCalendar } from '@/hooks/useCalendar';
 import type { ViewMode } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui';
 
 const VIEW_LABELS: Record<ViewMode, string> = {
   weekly: 'Week',
@@ -68,6 +69,22 @@ export function CalendarNav() {
         </Button>
       </div>
 
+      <div className="flex items-center gap-2">
+        <label
+          htmlFor="calendar-date-picker"
+          className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hidden sm:inline"
+        >
+          Go to date:
+        </label>
+        <Input
+          id="calendar-date-picker"
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="text-xs input w-32"
+          aria-label="Go to date"
+        />
+      </div>
       <div className="flex items-center gap-1">
         <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{label}</span>
       </div>

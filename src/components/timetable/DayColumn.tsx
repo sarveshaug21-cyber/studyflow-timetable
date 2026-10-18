@@ -1,20 +1,36 @@
 import { useCallback } from 'react';
+import { addDays, format } from 'date-fns';
 import { DndContext, DragEndEvent, PointerSensor, useSensor } from '@dnd-kit/core';
 import { useTimetable } from '@/hooks/useTimetable';
 import { useTimetableLayout } from '@/context/TimetableLayoutContext';
 import { SessionBlock } from './SessionBlock';
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
+import { useCreateSession } from '@/hooks/useCreateSession';
 import { timeToMinutes } from '@/utils/date';
-import { shiftSessionByPixels, addMinutes, durationMinutes } from '@/utils/calendar';
-import { isToday } from '@/types';
+import {
+  shiftSessionByPixels,
+  addMinutes,
+  durationMinutes,
+  assignColumns,
+} from '@/utils/calendar';
+import { isToday, type DayOfWeek } from '@/types';
 import { cn } from '@/utils/cn';
 
 interface DayColumnProps {
-  day: 1 | 2 | 3 | 4 | 5 | 6 | 0;
+  day: DayOfWeek;
+  /** ISO date (yyyy-MM-dd) of this column's date (weekly view). */
+  date?: string;
+  /** Callback when the user clicks/drags an empty slot to create a session. */
+  onCreateSession?: (date: string, startTime: string, endTime: string, day: DayOfWeek) => void;
   className?: string;
 }
 
-export function DayColumn({ day, className }: DayColumnProps) {
+export function DayColumn({
+  day,
+  date,
+  onCreateSession,
+  className,
+}: DayColumnProps) {
   const { getSessionsForDay, getSubject, sessions, updateSession } = useTimetable();
   const { config, getTimeSlots, getSessionTop, getSessionHeight } = useTimetableLayout();
   const columnSessions = getSessionsForDay(day);
@@ -23,6 +39,20 @@ export function DayColumn({ day, className }: DayColumnProps) {
 
   const sensors = useSensor(PointerSensor);
   const pixelsPerMinute = config.pixelsPerHour / 60;
+
+  const { containerRef, onPointerDown, preview } = useCreateSession({
+    date: date ?? '',
+    day,
+    config,
+    onCreate: onCreateSession ?? (() => {}),
+  });
+
+  const assigned = assignColumns(columnSessions);
+  const maxColumns =
+    assigned.length > 0
+      ? Math.max(...assigned.map((s) => s.column)) + 1
+      : 1;
+  const colWidth = 100 / maxColumns;
 
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -88,12 +118,22 @@ export function DayColumn({ day, className }: DayColumnProps) {
         )}
       </div>
       <div
+        ref={containerRef}
         className="relative overflow-hidden"
+        data-testid="day-column-grid"
         style={{
           height: config.pixelsPerHour * 24,
           flexShrink: 0,
+          touchAction: 'none',
         } as React.CSSProperties}
+        onPointerDown={onPointerDown}
       >
+        {date && onCreateSession && preview && (
+          <div
+            className="absolute left-1 right-1 bg-brand-500/20 border border-brand-500/50 rounded-sm pointer-events-none"
+            style={{ top: preview.top, height: preview.height }}
+          />
+        )}
         <div
           className="absolute inset-0 grid border-b border-neutral-100 dark:border-neutral-800"
           style={{
@@ -113,11 +153,24 @@ export function DayColumn({ day, className }: DayColumnProps) {
           ))}
         </div>
         <DndContext sensors={[sensors]} onDragEnd={onDragEnd}>
-          {columnSessions.map((session) => {
+          {assigned.map((session) => {
             const subject = getSubject(session.subjectId);
             if (!subject) return null;
-            const top = getSessionTop(session.startTime);
-            const height = getSessionHeight(session.startTime, session.endTime);
+            // Overnight sessions span midnight: on the start date they run from
+            // startTime to range end; on the following day they run from 00:00
+            // to endTime.
+            const isOvernightContinuation =
+              session.overnight &&
+              session.date &&
+              date === format(addDays(session.date, 1), 'yyyy-MM-dd');
+            const renderStartTime = isOvernightContinuation
+              ? '00:00'
+              : session.startTime;
+            const top = getSessionTop(renderStartTime);
+            const height = getSessionHeight(
+              renderStartTime,
+              session.endTime,
+            );
             return (
               <SessionBlock
                 key={session.id}
@@ -125,6 +178,8 @@ export function DayColumn({ day, className }: DayColumnProps) {
                 subject={subject}
                 top={top}
                 height={height}
+                left={session.column * colWidth}
+                width={colWidth}
               />
             );
           })}

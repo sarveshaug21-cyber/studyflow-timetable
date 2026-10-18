@@ -12,6 +12,7 @@ import {
   getSessionTop,
   getSessionHeight,
 } from '@/utils/date';
+import { addMinutes } from '@/utils/calendar';
 
 describe('Date Utilities', () => {
   describe('getWeekStart', () => {
@@ -174,5 +175,24 @@ describe('Date Utilities', () => {
       const height = getSessionHeight('09:00', '10:30', 30);
       expect(height).toBe(300);
     });
+
+    it('calculates height for overnight session', () => {
+      // Overnight 23:00-01:00 = 120 min duration with 30-min increments = 4 slots * 100 = 400
+      const height = getSessionHeight('23:00', '01:00', 30);
+      expect(height).toBe(400);
+    });
+  });
+});
+
+describe('addMinutes wrap', () => {
+  it('wraps past midnight when wrap is true', () => {
+    expect(addMinutes('23:00', 120, true)).toBe('01:00');
+    expect(addMinutes('22:30', 90, true)).toBe('00:00');
+    expect(addMinutes('23:59', 2, true)).toBe('00:01');
+  });
+
+  it('does not wrap by default', () => {
+    expect(addMinutes('23:00', 120)).toBe('25:00');
+    expect(addMinutes('09:00', 30)).toBe('09:30');
   });
 });

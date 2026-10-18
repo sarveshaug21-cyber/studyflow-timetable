@@ -72,8 +72,12 @@ export function getSessionTop(startTime: string, range: TimeRange, increment: 30
 }
 
 export function getSessionHeight(startTime: string, endTime: string, increment: 30 | 60): number {
-  const durationMinutes = timeToMinutes(endTime) - timeToMinutes(startTime);
-  const slots = durationMinutes / increment;
+  const [ah, am] = startTime.split(':').map(Number);
+  const [bh, bm] = endTime.split(':').map(Number);
+  const start = ah * 60 + am;
+  const end = bh * 60 + bm;
+  const duration = end >= start ? end - start : end + 1440 - start;
+  const slots = duration / increment;
   return slots * 100;
 }
 

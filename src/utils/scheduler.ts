@@ -234,10 +234,16 @@ function effectivePriority(item: HomeworkItem): StudyPriority {
 function computeRank(
   priority: StudyPriority,
   daysUntilDue: number,
+  horizonDays: number,
 ): number {
   const priorityBand = PRIORITY_WEIGHT[priority]; // low=1 .. urgent=4
-  const dueScore = Math.max(0, daysUntilDue);
-  return (4 - priorityBand) * 32 + dueScore;
+  // Clamp the due-date spread to the planning horizon so a far-future deadline
+  // can never inflate into a lower priority band. The multiplier (horizonDays +
+  // 1) is one more than the widest possible due-score spread, so priority is
+  // always the dominant key exactly as documented: an urgent item is scheduled
+  // ahead of everything else regardless of how far away its deadline is.
+  const dueScore = Math.min(horizonDays, Math.max(0, daysUntilDue));
+  return (4 - priorityBand) * (horizonDays + 1) + dueScore;
 }
 
 function formatMinTime(min: number): string {
@@ -454,7 +460,7 @@ export function planStudySessions(input: {
       item,
       priority,
       remainingMinutes,
-      rank: computeRank(priority, daysUntilDue),
+      rank: computeRank(priority, daysUntilDue, horizonDays),
       daysUntilDue,
       reason,
     });

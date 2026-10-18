@@ -529,4 +529,85 @@ describe('planStudySessions', () => {
       expect([1, 5]).toContain(s.day);
     }
   });
+
+  it('ranks urgent ahead of high even when urgent is due beyond the horizon (60-day horizon)', () => {
+    // Only one block fits per day, so allocation order (driven by `rank`) decides
+    // which item gets today's slot. `high` is due in 1 day; `urgent` is due 90
+    // days out — beyond the 60-day horizon. Priority must still win: the
+    // due-score is clamped to the horizon and the multiplier exceeds the
+    // horizon spread, so an urgent task is never outranked by a lower band.
+    const plan = run({
+      homework: [
+        hw({ id: 'urgent', priority: 'urgent', dueDate: new Date(2026, 9, 104), type: 'Reading' }), // +90 days
+        hw({ id: 'high', priority: 'high', dueDate: new Date(2026, 9, 15), type: 'Reading' }), // +1 day
+      ],
+      options: { horizonDays: 60, maxBlocksPerDay: 1 },
+    });
+    expect(plan.suggestions.map((s) => s.homeworkId)).toEqual(['urgent', 'high']);
+    expect(plan.suggestions[0].date).toBe(iso(0));
+    expect(plan.suggestions[1].date).toBe(iso(1));
+  });
+
+  it('orders every priority band urgent > high > medium > low at equal deadlines', () => {
+    const plan = run({
+      homework: [
+        hw({ id: 'low', priority: 'low', dueDate: new Date(2026, 9, 16), type: 'Reading' }),
+        hw({ id: 'medium', priority: 'medium', dueDate: new Date(2026, 9, 16), type: 'Reading' }),
+        hw({ id: 'high', priority: 'high', dueDate: new Date(2026, 9, 16), type: 'Reading' }),
+        hw({ id: 'urgent', priority: 'urgent', dueDate: new Date(2026, 9, 16), type: 'Reading' }),
+      ],
+      options: { horizonDays: 3, maxBlocksPerDay: 4 },
+    });
+    expect(plan.suggestions.map((s) => s.homeworkId)).toEqual(['urgent', 'high', 'medium', 'low']);
+  });
+
+  it('ranks nearer deadlines first within the same priority band', () => {
+    const plan = run({
+      homework: [
+        hw({ id: 'due-plus5', priority: 'medium', dueDate: new Date(2026, 9, 19), type: 'Reading' }), // iso(5)
+        hw({ id: 'due-plus2', priority: 'medium', dueDate: new Date(2026, 9, 16), type: 'Reading' }), // iso(2)
+        hw({ id: 'due-today', priority: 'medium', dueDate: new Date(2026, 9, 14), type: 'Reading' }), // iso(0)
+      ],
+      options: { horizonDays: 7, maxBlocksPerDay: 1 },
+    });
+    expect(plan.suggestions.map((s) => s.homeworkId)).toEqual(['due-today', 'due-plus2', 'due-plus5']);
+    expect(plan.suggestions.map((s) => s.date)).toEqual([iso(0), iso(1), iso(2)]);
+  });
+
+  it('keeps far-future work inside the 60-day window and does not schedule past the horizon', () => {
+    const plan = run({
+      homework: [
+        hw({ id: 'far', priority: 'medium', dueDate: new Date(2026, 9, 104), type: 'Reading' }), // +90 days
+        hw({ id: 'near', priority: 'medium', dueDate: new Date(2026, 9, 24), type: 'Reading' }), // iso(10)
+      ],
+      options: { horizonDays: 60, maxBlocksPerDay: 2 },
+    });
+    expect(plan.suggestions.map((s) => s.homeworkId)).toEqual(['near', 'far']);
+    for (const s of plan.suggestions) {
+      expect(s.date <= iso(59)).toBe(true); // nothing scheduled at/after the horizon edge
+    }
+  });
+
+  it('preserves near-term ranking and title-then-id tie-breaking', () => {
+    const plan = run({
+      homework: [
+        hw({ id: 'b-task', title: 'B Task', priority: 'medium', dueDate: new Date(2026, 9, 16), type: 'Reading' }),
+        hw({ id: 'a-task', title: 'A Task', priority: 'medium', dueDate: new Date(2026, 9, 16), type: 'Reading' }),
+      ],
+      options: { horizonDays: 3, maxBlocksPerDay: 4 },
+    });
+    expect(plan.suggestions.map((s) => s.homeworkId)).toEqual(['a-task', 'b-task']);
+  });
+
+  it('ranks overdue work at the top of its band (negative due-date clamped to 0)', () => {
+    const plan = run({
+      homework: [
+        hw({ id: 'due-in-5', priority: 'medium', dueDate: new Date(2026, 9, 19), type: 'Essay' }), // iso(5)
+        hw({ id: 'overdue', priority: 'medium', dueDate: new Date(2026, 9, 11), type: 'Essay' }), // iso(-3)
+      ],
+      options: { horizonDays: 7 },
+    });
+    expect(plan.suggestions[0].homeworkId).toBe('overdue');
+    expect(plan.suggestions[0].date).toBe(iso(0)); // scheduled today, not dropped
+  });
 });

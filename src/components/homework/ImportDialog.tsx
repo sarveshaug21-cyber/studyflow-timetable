@@ -3,7 +3,7 @@ import { Upload, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge, Card } from '@/components/ui';
 import { Modal } from '@/components/ui/Modal';
-import type { HomeworkItem } from '@/types';
+import type { HomeworkItem, Subject } from '@/types';
 import {
   parseImportFile,
   type ImportPreview,
@@ -278,6 +278,7 @@ interface ImportDialogProps {
   onClose: () => void;
   homework: HomeworkItem[];
   onImported: (homework: HomeworkItem[]) => void;
+  subjects?: Subject[];
 }
 
 export function ImportDialog({

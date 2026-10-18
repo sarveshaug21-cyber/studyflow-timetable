@@ -4,6 +4,8 @@ export type TimeIncrement = 30 | 60;
 
 export type SessionType = 'lecture' | 'lab' | 'tutorial' | 'seminar' | 'study';
 
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
+
 export type ViewMode = 'weekly' | 'agenda' | 'day' | 'month';
 
 export type HomeworkPriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -25,6 +27,10 @@ export interface Session {
   day: DayOfWeek;
   /** ISO date (yyyy-MM-dd) for one-off sessions; undefined for weekly-recurring ones. */
   date?: string;
+  /** Optional end date (yyyy-MM-dd) for one-off multi-day sessions. When present and
+   *  different from `date`, the session spans every day from `date` through `endDate`
+   *  inclusive. Undefined for single-day and weekly-recurring sessions. */
+  endDate?: string;
   /** All-day event (startTime/endTime are not significant). */
   allDay?: boolean;
   startTime: string;
@@ -33,6 +39,22 @@ export interface Session {
   location?: string;
   notes?: string;
   recurring: boolean;
+  /** When true, the session spans midnight: it starts at `startTime` on `date`
+   *  and ends at `endTime` on the following calendar day (endTime < startTime).
+   *  Undefined/false means a same-day session. */
+  overnight?: boolean;
+  /** Bounded recurrence frequency. When set, `recurring` must be true and the
+   *  session generates occurrences according to this rule. Undefined means
+   *  legacy weekly-forever behavior when `recurring` is true. */
+  recurrenceRule?: RecurrenceFrequency;
+  /** Weekdays (1=Mon..6=Sat, 0=Sun) for weekly recurrence. Defaults to [day]. */
+  recurrenceWeekdays?: DayOfWeek[];
+  /** Series anchor date (yyyy-MM-dd). Defaults to `date` when present, else today. */
+  recurrenceStartDate?: string;
+  /** Exclusive upper bound date (yyyy-MM-dd). Generation stops at or before this date. */
+  recurrenceEndDate?: string;
+  /** Maximum number of occurrences. Generation stops after this many. */
+  recurrenceMaxOccurrences?: number;
   createdAt: string;
   updatedAt: string;
 }
